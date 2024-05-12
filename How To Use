@@ -1,0 +1,13 @@
+This python file helps with creating all tunnels needed from vdi Via Jump-Box to Franklin vms.
+it runs with python 3.6, and need libtmux module.
+
+to use it:
+simply fill the following global variables-
+     TYPE = 0
+    JUMP_BOX = YOUR JUMP BOX IP
+    VM_LISTS = A LIST OF YOUR FRANKLIN VMS.
+    PASSWORDS = A LIST OF YOU VMS PASSWORD (CORRESPOND TO THE THE LIST OF VMS, FIRST PASSWORD FOR FIRST VMS)
+that's it, hit run, and wait for the click any-key message, and go run spark.
+
+to stop tunneling hit any key in terminal window.
+
