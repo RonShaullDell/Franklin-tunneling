@@ -3,10 +3,10 @@ import subprocess
 import time
 import libtmux
 
-JUMP_BOX = "10.236.211.60"  # enter your jump box ip
-JUMP_BOX_PASSWORD = "Scaleio123!"  # enter your jump box password
-VM_LISTS = ["172.24.10.213", "172.24.10.214", "172.24.10.215", "172.24.10.216"]  # enter a list of your vms.
-PASSWORDS = ["password", "password", "password", "password"]  # enter the corresponding password list for the vms.
+JUMP_BOX = ""  # enter your jump box ip
+JUMP_BOX_PASSWORD = ""  # enter your jump box password
+VM_LISTS = []  # enter a list of your vms.
+PASSWORDS = []  # enter the corresponding password list for the vms.
 
 
 class Connection:
