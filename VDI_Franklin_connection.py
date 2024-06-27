@@ -3,9 +3,10 @@ import subprocess
 import time
 import libtmux
 
-JUMP_BOX = None  # enter your jump box ip
-VM_LISTS = []  # enter a list of your vms.
-PASSWORDS = []  # enter the corresponding password list for the vms.
+JUMP_BOX = "10.236.211.60"  # enter your jump box ip
+JUMP_BOX_PASSWORD = "Scaleio123!"  # enter your jump box password
+VM_LISTS = ["172.24.10.213", "172.24.10.214", "172.24.10.215", "172.24.10.216"]  # enter a list of your vms.
+PASSWORDS = ["password", "password", "password", "password"]  # enter the corresponding password list for the vms.
 
 
 class Connection:
@@ -180,7 +181,7 @@ class Connection:
                 raise Exception(f"No window with name {window_name} was found.")
             if pane_name in window.list_panes():
                 raise Exception(f"pane name {pane_name} already exists.")
-            pane = window.split_window(attach=False)
+            pane = window.split_window(attach=False, vertical=False)
             # pane.set_shell_command("bash --rcfile ~/.bashrc", window_name + "-pane")
             return pane  # we return the instance of our new pane.
         except Exception as e:
@@ -189,17 +190,29 @@ class Connection:
     # Example usage
 
 
+def create_askpass_script():
+    script_content = f"""#!/bin/bash
+
+echo "{JUMP_BOX_PASSWORD}"
+"""
+
+    with open("askpass.sh", "w") as file:
+        file.write(script_content)
+
+
 if __name__ == "__main__":
     session_name = "my_session"
     try:
         my_connection = Connection()
         my_connection.create_detached_tmux_session(session_name)
         print("The sessions currently running: " + str(my_connection.server.sessions))
+        create_askpass_script()
         for i in range(len(VM_LISTS)):
             pane = my_connection.create_new_pane(session_name, pane_name=f"pane#{i}")
             my_connection.run_cmd(pane,
                                   f"sshuttle -r root@{JUMP_BOX} {VM_LISTS[i]}/16 --no-latency-control")
             time.sleep(2)
+            my_connection.enter_password(pane, JUMP_BOX_PASSWORD)
             my_connection.enter_password(pane, PASSWORDS[i])
             print(f"A ssh tunnel from vdi to {VM_LISTS[i]} via {JUMP_BOX} was created.")
         input("click any-key")
