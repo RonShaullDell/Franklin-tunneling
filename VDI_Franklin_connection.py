@@ -11,7 +11,7 @@ PASSWORDS = []  # enter the corresponding password list for the vms.
 
 class Connection:
     """
-        this class will hold all functionality regarding tmux connections.
+         this class will hold all functionality regarding tmux connections.
     """
     server = None  # a server hold all session, that holds all windows, inside each window is a pane to run cmds.
 
