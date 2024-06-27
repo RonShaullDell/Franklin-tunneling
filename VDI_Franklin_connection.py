@@ -195,7 +195,7 @@ if __name__ == "__main__":
         my_connection = Connection()
         my_connection.create_detached_tmux_session(session_name)
         print("The sessions currently running: " + str(my_connection.server.sessions))
-        for i in range(0, 4):
+        for i in range(len(VM_LISTS)):
             pane = my_connection.create_new_pane(session_name, pane_name=f"pane#{i}")
             my_connection.run_cmd(pane,
                                   f"sshuttle -r root@{JUMP_BOX} {VM_LISTS[i]}/16 --no-latency-control")
