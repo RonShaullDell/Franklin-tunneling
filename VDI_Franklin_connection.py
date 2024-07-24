@@ -4,9 +4,11 @@ import time
 import libtmux
 
 JUMP_BOX = ""  # enter your jump box ip
-JUMP_BOX_PASSWORD = ""  # enter your jump box password
+JUMP_BOX_PASSWORD = ""
 VM_LISTS = []  # enter a list of your vms.
 PASSWORDS = []  # enter the corresponding password list for the vms.
+
+IS_FIRST_LOGGING = False
 
 
 class Connection:
@@ -14,6 +16,7 @@ class Connection:
         this class will hold all functionality regarding tmux connections.
     """
     server = None  # a server hold all session, that holds all windows, inside each window is a pane to run cmds.
+    vertical = False
 
     def __init__(self):
 
@@ -158,7 +161,8 @@ class Connection:
         except Exception as e:
             print("Error executing SSH command:", e)
 
-    def create_new_pane(self, session_name, window_name="", pane_name="") -> libtmux.pane:
+    def create_new_pane(self, session_name, window_name="", pane_name="", pane_height=10,
+                        pane_width=10) -> libtmux.pane:
         """
         this function creates new pane, essentially a pane is a new terminal in the same window.
         :param session_name: in case we got several sessions.
@@ -181,8 +185,9 @@ class Connection:
                 raise Exception(f"No window with name {window_name} was found.")
             if pane_name in window.list_panes():
                 raise Exception(f"pane name {pane_name} already exists.")
-            pane = window.split_window(attach=False, vertical=False)
-            # pane.set_shell_command("bash --rcfile ~/.bashrc", window_name + "-pane")
+            pane = window.split_window(attach=False, vertical=self.vertical)
+            self.vertical = not self.vertical
+            pane.resize_pane(height=pane_height, width=pane_width)
             return pane  # we return the instance of our new pane.
         except Exception as e:
             print(f"an error occurred: " + str(e))
@@ -207,14 +212,46 @@ if __name__ == "__main__":
         my_connection.create_detached_tmux_session(session_name)
         print("The sessions currently running: " + str(my_connection.server.sessions))
         create_askpass_script()
-        for i in range(len(VM_LISTS)):
-            pane = my_connection.create_new_pane(session_name, pane_name=f"pane#{i}")
-            my_connection.run_cmd(pane,
-                                  f"sshuttle -r root@{JUMP_BOX} {VM_LISTS[i]}/16 --no-latency-control")
-            time.sleep(2)
-            my_connection.enter_password(pane, JUMP_BOX_PASSWORD)
-            my_connection.enter_password(pane, PASSWORDS[i])
-            print(f"A ssh tunnel from vdi to {VM_LISTS[i]} via {JUMP_BOX} was created.")
+
+        num_windows = 3  # Number of windows to distribute panes across
+        panes_per_window = (len(VM_LISTS) + num_windows - 1) // num_windows  # Calculate panes per window
+
+        for win_idx in range(num_windows):
+            window_name = f"window{win_idx}"
+            if win_idx == 0:
+                window = my_connection.server.find_where({"session_name": session_name}).select_window(0)
+                window.rename_window(window_name)
+            else:
+                window = my_connection.server.find_where({"session_name": session_name}).new_window(
+                    window_name=window_name)
+
+            start_idx = win_idx * panes_per_window
+            end_idx = min(start_idx + panes_per_window, len(VM_LISTS))
+
+            for i in range(start_idx, end_idx):
+                if IS_FIRST_LOGGING:
+                    pane = my_connection.create_new_pane(session_name, window_name=window_name, pane_name=f"pane#{i}",
+                                                         pane_height=30, pane_width=100)
+                    my_connection.run_cmd(pane,
+                                          f"sshuttle -r root@{JUMP_BOX} {VM_LISTS[i]}/16 --no-latency-control")
+                    time.sleep(2)
+                    my_connection.enter_password(pane, JUMP_BOX_PASSWORD)
+                    time.sleep(2)
+                    my_connection.enter_password(pane, "yes")
+                    time.sleep(2)
+                    my_connection.enter_password(pane, PASSWORDS[i])
+                    print(f"A ssh tunnel from vdi to {VM_LISTS[i]} via {JUMP_BOX} was created.")
+                else:
+                    # JB = JUMP_BOX if i < 5 else JUMP_BOX2
+                    pane = my_connection.create_new_pane(session_name, window_name=window_name, pane_name=f"pane#{i}",
+                                                         pane_height=30, pane_width=100)
+                    my_connection.run_cmd(pane,
+                                          f"sshuttle -r root@{JUMP_BOX} {VM_LISTS[i]}/16 --no-latency-control")
+                    time.sleep(2)
+                    my_connection.enter_password(pane, JUMP_BOX_PASSWORD)
+                    my_connection.enter_password(pane, PASSWORDS[i])
+                    print(f"A ssh tunnel from vdi to {VM_LISTS[i]} via {JUMP_BOX} was created.")
+
         input("click any-key")
     except Exception as e:
         print(f"An error occurred: {e}")
